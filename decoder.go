@@ -31,9 +31,9 @@ func decode(inputPath string, lsbBitsToUse int) error {
 	for i := 0; i < count; i++ {
 		// Each byte takes up 4 samples and we skip the first 4 because that's where
 		// we keep the length of the payload
-		base := (i+1) * 4
+		base := (i + 1) * 4
 
-		bits, err := decodeBits(samples[base:base+4])
+		bits, err := decodeBits(samples[base : base+4])
 		if err != nil {
 			return err
 		}
