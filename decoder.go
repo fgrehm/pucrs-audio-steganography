@@ -7,23 +7,33 @@ import (
 	"github.com/youpy/go-wav"
 )
 
-func decode(inputPath string, lsbBitsToUse int) error {
+func decode(inputPath string, lsbsToUse int) ([]byte, error) {
 	log.Println("Decoding")
 
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer inputFile.Close()
 
 	samples, _ := readSamples(inputFile)
-	inputFile.Close()
+	return decodeData(samples)
+}
 
-	countInBytes, err := decodeBits(samples[0:4])
-	if err != nil {
-		return err
+func decodeData(samples []wav.Sample) ([]byte, error) {
+	count := 0
+	for i := 3; i >= 0; i-- {
+		count = count << 8
+
+		// Each byte takes up 4 samples
+		base := i * 4
+		bits, err := decodeBits(samples[base:base+4])
+		if err != nil {
+			return nil, err
+		}
+		count += int(bits)
+		log.Printf("%032b", count)
 	}
-	count := int(countInBytes)
 
 	log.Println(count, "bytes to read")
 
@@ -31,18 +41,16 @@ func decode(inputPath string, lsbBitsToUse int) error {
 	for i := 0; i < count; i++ {
 		// Each byte takes up 4 samples and we skip the first 4 because that's where
 		// we keep the length of the payload
-		base := (i + 1) * 4
+		base := (i + 4) * 4
 
 		bits, err := decodeBits(samples[base : base+4])
 		if err != nil {
-			return err
+			return nil, err
 		}
 		data = append(data, bits)
 	}
 
-	log.Println("Data read:", string(data))
-
-	return nil
+	return data, nil
 }
 
 func decodeBits(samples []wav.Sample) (byte, error) {

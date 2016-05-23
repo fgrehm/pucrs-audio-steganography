@@ -8,7 +8,7 @@ import (
 	"github.com/youpy/go-wav"
 )
 
-func encode(inputPath, outputPath string, lsbBitsToUse int, data []byte) error {
+func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 	log.Println("Encoding", inputPath, "to", outputPath)
 
 	inputFile, err := os.Open(inputPath)
@@ -20,7 +20,15 @@ func encode(inputPath, outputPath string, lsbBitsToUse int, data []byte) error {
 	samples, format := readSamples(inputFile)
 	inputFile.Close()
 
-	if err := encodeData(samples, data, lsbBitsToUse); err != nil {
+	if format.NumChannels != 2 {
+		return fmt.Errorf("Mono audio files are not supported")
+	}
+
+	usableBytesCount := len(samples)/4-4
+	log.Printf("%d samples read, %d kbytes available to write", len(samples), usableBytesCount/1024)
+
+	log.Println("Encoding", len(data), "bytes")
+	if err := encodeData(samples, data, lsbsToUse); err != nil {
 		return err
 	}
 
@@ -30,20 +38,28 @@ func encode(inputPath, outputPath string, lsbBitsToUse int, data []byte) error {
 	}
 	defer outputFile.Close()
 
-	fmt.Println("Writing new file")
+	log.Println("Writing new file")
 	writer := wav.NewWriter(outputFile, uint32(len(samples)), format.NumChannels, format.SampleRate, format.BitsPerSample)
-	return writer.WriteSamples(samples)
+	if err := writer.WriteSamples(samples); err != nil {
+		return err
+	}
+	log.Println("Done")
+	return nil
 }
 
-func encodeData(samples []wav.Sample, data []byte, lsbBitsToUse int) error {
-	encodeBits(samples[0:4], byte(len(data)))
+func encodeData(samples []wav.Sample, data []byte, lsbsToUse int) error {
+	dataLength := len(data)
+	for i := 0; i < 4; i++ {
+		// Each byte takes up 4 samples
+		base := i * 4
+		encodeBits(samples[base:base+4], byte(dataLength))
+		dataLength = dataLength >> 8
+	}
 
 	for i, bits := range data {
-		log.Printf("[%d] Encoding %s / %08b\n", i, string(bits), bits)
-
-		// Each byte takes up 4 samples and we skip the first 4 because that's where
-		// we keep the length of the payload
-		base := (i + 1) * 4
+		// Each byte takes up 4 samples and we skip the first 4 sets because that's
+		// where we keep the length of the payload
+		base := (i + 4) * 4
 		if err := encodeBits(samples[base:base+4], bits); err != nil {
 			return err
 		}

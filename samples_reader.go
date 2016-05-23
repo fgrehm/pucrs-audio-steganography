@@ -28,7 +28,5 @@ func readSamples(inputFile *os.File) ([]wav.Sample, *wav.WavFormat) {
 		samplesRead = append(samplesRead, samples...)
 	}
 
-	log.Printf("%d samples read", len(samplesRead))
-
 	return samplesRead, format
 }
