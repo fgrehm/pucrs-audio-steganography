@@ -1,0 +1,20 @@
+<div class="row">
+  <div class="section">
+    <form class="full-width-forms" action="/" method="post" enctype="multipart/form-data">
+      <label for="file">Wav file</label>
+      <input name="file" type="file" accept=".wav">
+
+      <label for="lsbs">Least significant bits to use</label>
+      <input name="lsbs" type="number" step="1">
+
+      <label for="payload">Payload</label>
+      <textarea name="payload" placeholder="Text to embed on audio file" rows="7"></textarea>
+
+      <div class="clear"></div>
+
+      <p>
+        <button class="btn small solid round blue">Process</button>
+      </p>
+    </form>
+  </div>
+</div>

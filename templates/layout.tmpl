@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="IE=edge" http-equiv=X-UA-Compatible />
+    <meta charset=UTF-8 />
+    <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport />
+    <title>Audio Steganography Lab</title>
+    <!--[if IE 9]><html class=ie9></html><![endif]-->
+    <!--[if IE 8]><html class=ie8></html><![endif]-->
+
+    <link href="https://cdn.rawgit.com/doximity/vital/master/releases/v1.0.1/stylesheets/vital.min.css" rel=stylesheet />
+    {{ partial "assets" }}
+    <style>
+      .hero .section {
+        padding: 3em 1.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="contents">
+      <div class="row hero">
+        <div class="section center">
+          <h1>Audio Steganography Lab</h1>
+        </div>
+      </div>
+      {{ yield }}
+    </div>
+    {{ partial "js" }}
+  </body>
+</html>

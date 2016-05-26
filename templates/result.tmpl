@@ -1,0 +1,155 @@
+{{ define "assets-result" }}
+<script src="//cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.0.52/wavesurfer.min.js"></script>
+{{ end }}
+
+{{ define "js-result" }}
+<script>
+  inputWav = WaveSurfer.create({
+      container: '#waveform-input',
+      waveColor: 'black',
+      progressColor: 'gray'
+  });
+  inputWav.load("/wavs/{{ . }}/input.wav");
+  var sliderInput = document.querySelector('#zoom-input');
+  sliderInput.oninput = function () {
+    var zoomLevel = Number(sliderInput.value);
+    inputWav.zoom(zoomLevel);
+  };
+  setTimeout(function () {
+    sliderInput.oninput();
+  }, 1000);
+
+  // output1 = WaveSurfer.create({
+  //     container: '#waveform-output-1',
+  //     waveColor: 'violet',
+  //     progressColor: 'purple'
+  // });
+  // output1.load("/wavs/{{ . }}/output-1.wav");
+  // var sliderOutput1 = document.querySelector('#zoom-output-1');
+  // sliderOutput1.oninput = function () {
+  //   var zoomLevel = Number(sliderOutput1.value);
+  //   output1.zoom(zoomLevel);
+  // };
+
+  // output2 = WaveSurfer.create({
+  //     container: '#waveform-output-2',
+  //     waveColor: 'violet',
+  //     progressColor: 'purple'
+  // });
+  // output2.load("/wavs/{{ . }}/output-2.wav");
+  // var sliderOutput2 = document.querySelector('#zoom-output-2');
+  // sliderOutput2.oninput = function () {
+  //   var zoomLevel = Number(sliderOutput2.value);
+  //   output2.zoom(zoomLevel);
+  // };
+
+  output4 = WaveSurfer.create({
+      container: '#waveform-output-4',
+      waveColor: 'violet',
+      progressColor: 'purple'
+  });
+  output4.load("/wavs/{{ . }}/output-4.wav");
+  var sliderOutput4 = document.querySelector('#zoom-output-4');
+  sliderOutput4.oninput = function () {
+    var zoomLevel = Number(sliderOutput4.value);
+    output4.zoom(zoomLevel);
+  };
+  setTimeout(function () {
+    sliderOutput4.oninput();
+  }, 1000);
+</script>
+{{ end }}
+
+<div class="row">
+  <div class="section">
+    <p>
+      Here goes the result with guid {{ . }}
+    </p>
+    <div id="waveform-input"></div>
+    <div style="text-align: center">
+      <button class="btn btn-primary" onclick="window.inputWav.playPause()">
+        Play
+      </button>
+
+      <div class="row">
+        <div class="col-1-8">
+          &minus;
+        </div>
+        <div class="col-3-4">
+          <input id="zoom-input" type="range" min="1" max="500" value="500" style="width: 100%" />
+        </div>
+        <div class="col-1-8">
+          &plus;
+        </div>
+      </div>
+    </div>
+
+    <!--
+    <br><br>
+
+    <div id="waveform-output-1"></div>
+    <div style="text-align: center">
+      <button class="btn btn-primary" onclick="window.output1.playPause()">
+        Play
+      </button>
+
+      <div class="row">
+        <div class="col-1-8">
+          &plus;
+        </div>
+        <div class="col-3-4">
+          <input id="zoom-output-1" type="range" min="1" max="500" value="1" style="width: 100%" />
+        </div>
+
+        <div class="col-1-8">
+          &minus;
+        </div>
+      </div>
+    </div>
+
+    <br><br>
+
+    <div id="waveform-output-2"></div>
+    <div style="text-align: center">
+      <button class="btn btn-primary" onclick="window.output2.playPause()">
+        Play
+      </button>
+
+      <div class="row">
+        <div class="col-1-8">
+          &plus;
+        </div>
+        <div class="col-3-4">
+          <input id="zoom-output-2" type="range" min="1" max="500" value="1" style="width: 100%" />
+        </div>
+
+        <div class="col-1-8">
+          &minus;
+        </div>
+      </div>
+    </div>
+    -->
+    <br><br>
+
+    <div id="waveform-output-4"></div>
+    <div style="text-align: center">
+      <button class="btn btn-primary" onclick="window.output4.playPause()">
+        Play
+      </button>
+
+      <div class="row">
+        <div class="col-1-8">
+          &minus;
+        </div>
+
+        <div class="col-3-4">
+          <input id="zoom-output-4" type="range" min="1" max="500" value="500" style="width: 100%" />
+        </div>
+
+        <div class="col-1-8">
+          &plus;
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
