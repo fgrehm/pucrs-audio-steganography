@@ -72,10 +72,30 @@ var decodeBinCmd = &cobra.Command{
 	},
 }
 
+var webCmd = &cobra.Command{
+	Use: "web [port number]",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("Invalid arguments provided")
+		}
+
+		port := "8080"
+		if os.Getenv("PORT") != "" {
+			port = os.Getenv("PORT")
+		}
+		if len(args) == 1 && args[0] != "" {
+			port = args[0]
+		}
+		runServer(port)
+		return nil
+	},
+}
+
 var LSBsToUse = 1
 
 func main() {
 	rootCmd.PersistentFlags().IntVar(&LSBsToUse, "lsb-bits", LSBsToUse, "the amount of least significant bits to use")
+	rootCmd.AddCommand(webCmd)
 	rootCmd.AddCommand(encodeCmd)
 	rootCmd.AddCommand(decodeCmd)
 	rootCmd.AddCommand(encodeBinCmd)
