@@ -22,7 +22,7 @@ func decode(inputPath string, lsbsToUse int) ([]byte, error) {
 
 func decodeData(samples []wav.Sample, lsbsToUse int) []byte {
 	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8/2/lsbsToUse
+	samplesPerByte := 8 / 2 / lsbsToUse
 
 	count := 0
 	for i := 3; i >= 0; i-- {
@@ -41,7 +41,7 @@ func decodeData(samples []wav.Sample, lsbsToUse int) []byte {
 		// we keep the length of the payload
 		base := (i + 4) * samplesPerByte
 
-		oneByte := decodeByte(samples[base : base+samplesPerByte], lsbsToUse)
+		oneByte := decodeByte(samples[base:base+samplesPerByte], lsbsToUse)
 		data = append(data, oneByte)
 	}
 
@@ -50,7 +50,7 @@ func decodeData(samples []wav.Sample, lsbsToUse int) []byte {
 
 func decodeByte(samples []wav.Sample, lsbsToUse int) byte {
 	oneByte := byte(0)
-	for i := len(samples)-1; i >= 0; i-- {
+	for i := len(samples) - 1; i >= 0; i-- {
 		sample := samples[i]
 		for channel := 1; channel >= 0; channel-- {
 			value := sample.Values[channel]

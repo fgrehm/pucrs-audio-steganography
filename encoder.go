@@ -25,9 +25,9 @@ func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 	}
 
 	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8/2/lsbsToUse
+	samplesPerByte := 8 / 2 / lsbsToUse
 
-	usableBytesCount := len(samples)/samplesPerByte-(32/samplesPerByte)
+	usableBytesCount := len(samples)/samplesPerByte - (32 / samplesPerByte)
 	log.Printf("%d samples read, %d kbytes available to write", len(samples), usableBytesCount/1024)
 
 	if len(data) > usableBytesCount {
@@ -54,7 +54,7 @@ func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 
 func encodeData(samples []wav.Sample, data []byte, lsbsToUse int) {
 	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8/2/lsbsToUse
+	samplesPerByte := 8 / 2 / lsbsToUse
 
 	// dataLength is a 32bit int that takes up 4 bytes
 	dataLength := len(data)
@@ -73,7 +73,7 @@ func encodeData(samples []wav.Sample, data []byte, lsbsToUse int) {
 }
 
 func encodeByte(samples []wav.Sample, oneByte byte, lsbsToUse int) {
-	for i, sample := range(samples) {
+	for i, sample := range samples {
 		for channel := 0; channel < 2; channel++ {
 			value := sample.Values[channel]
 			value = value >> uint(lsbsToUse)
