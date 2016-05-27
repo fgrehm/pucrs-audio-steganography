@@ -94,7 +94,7 @@ var webCmd = &cobra.Command{
 var LSBsToUse = 1
 
 func main() {
-	rootCmd.PersistentFlags().IntVar(&LSBsToUse, "lsb-bits", LSBsToUse, "the amount of least significant bits to use")
+	rootCmd.PersistentFlags().IntVar(&LSBsToUse, "lsb", LSBsToUse, "the amount of least significant bits to use")
 	rootCmd.AddCommand(webCmd)
 	rootCmd.AddCommand(encodeCmd)
 	rootCmd.AddCommand(decodeCmd)

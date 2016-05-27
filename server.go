@@ -45,7 +45,7 @@ func runServer(port string) {
 			return err
 		}
 
-		return c.Redirect(http.StatusMovedPermanently, "/" + id)
+		return c.Redirect(http.StatusMovedPermanently, "/"+id)
 	})
 	e.GET("/:id", func(c echo.Context) error {
 		id := c.Param("id")

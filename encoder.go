@@ -20,22 +20,17 @@ func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 	samples, format := readSamples(inputFile)
 	inputFile.Close()
 
-	if format.NumChannels != 2 {
-		return fmt.Errorf("Mono audio files are not supported")
-	}
-
-	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8 / 2 / lsbsToUse
-
-	usableBytesCount := len(samples)/samplesPerByte - (32 / samplesPerByte)
+	usableBytesCount := len(samples) * int(format.NumChannels) * lsbsToUse / 8
 	log.Printf("%d samples read, %d kbytes available to write", len(samples), usableBytesCount/1024)
 
 	if len(data) > usableBytesCount {
-		return fmt.Errorf("The input file is too small")
+		return fmt.Errorf("The input file is too small to handle the payload")
 	}
 
 	log.Println("Encoding", len(data), "bytes")
-	encodeData(samples, data, lsbsToUse)
+	encoder := &encoder{samples, format, lsbsToUse, encoderPtr{}}
+	encoder.writeInt(len(data))
+	encoder.writeBytes(data)
 
 	outputFile, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -52,37 +47,55 @@ func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 	return nil
 }
 
-func encodeData(samples []wav.Sample, data []byte, lsbsToUse int) {
-	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8 / 2 / lsbsToUse
+type encoder struct {
+	samples   []wav.Sample
+	format    *wav.WavFormat
+	lsbsToUse int
+	ptr       encoderPtr
+}
 
-	// dataLength is a 32bit int that takes up 4 bytes
-	dataLength := len(data)
+type encoderPtr struct {
+	sample       int
+	lsb, channel uint
+}
+
+func (e *encoder) writeInt(value int) {
 	for i := 0; i < 4; i++ {
-		base := i * samplesPerByte
-		encodeByte(samples[base:base+samplesPerByte], byte(dataLength), lsbsToUse)
-		dataLength = dataLength >> 8
-	}
-
-	for i, oneByte := range data {
-		// Each byte takes up X samples and we skip the first 4 usable bytes because
-		// that's where we keep the length of the payload
-		base := (i + 4) * samplesPerByte
-		encodeByte(samples[base:base+samplesPerByte], oneByte, lsbsToUse)
+		e.writeByte(byte(value))
+		value >>= 8
 	}
 }
 
-func encodeByte(samples []wav.Sample, oneByte byte, lsbsToUse int) {
-	for i, sample := range samples {
-		for channel := 0; channel < 2; channel++ {
-			value := sample.Values[channel]
-			value = value >> uint(lsbsToUse)
-			for k := 0; k < lsbsToUse; k++ {
-				value = value << 1
-				value += int(oneByte & 1)
-				oneByte = oneByte >> 1
-			}
-			samples[i].Values[channel] = value
+func (e *encoder) writeBytes(bytes []byte) {
+	for _, oneByte := range bytes {
+		e.writeByte(oneByte)
+	}
+}
+
+func (e *encoder) writeByte(oneByte byte) {
+	for i := 0; i < 8; i++ {
+		sample := e.samples[e.ptr.sample]
+		value := sample.Values[e.ptr.channel]
+
+		mask := byte(1 << uint(i))
+		if oneByte&mask == mask {
+			value |= 1 << e.ptr.lsb
+		} else {
+			value &= ^(1 << e.ptr.lsb)
+		}
+
+		e.samples[e.ptr.sample].Values[e.ptr.channel] = value
+
+		e.ptr.lsb += 1
+		if e.ptr.lsb < uint(e.lsbsToUse) {
+			continue
+		}
+
+		e.ptr.lsb = 0
+		e.ptr.channel += 1
+		if e.ptr.channel == uint(e.format.NumChannels) {
+			e.ptr.sample += 1
+			e.ptr.channel = 0
 		}
 	}
 }

@@ -16,49 +16,63 @@ func decode(inputPath string, lsbsToUse int) ([]byte, error) {
 	}
 	defer inputFile.Close()
 
-	samples, _ := readSamples(inputFile)
-	return decodeData(samples, lsbsToUse), nil
+	samples, format := readSamples(inputFile)
+
+	decoder := &decoder{samples, format, lsbsToUse, decoderPtr{}}
+	dataLength := decoder.readInt()
+	log.Println("Payload size", dataLength, "bytes")
+	return decoder.readBytes(dataLength), nil
 }
 
-func decodeData(samples []wav.Sample, lsbsToUse int) []byte {
-	// 8 bits split across 2 channels with lsbsToUse LSB bits modified
-	samplesPerByte := 8 / 2 / lsbsToUse
+type decoder struct {
+	samples   []wav.Sample
+	format    *wav.WavFormat
+	lsbsToUse int
+	ptr       decoderPtr
+}
 
-	count := 0
-	for i := 3; i >= 0; i-- {
-		count = count << 8
+type decoderPtr struct {
+	sample       int
+	lsb, channel uint
+}
 
-		base := i * samplesPerByte
-		oneByte := decodeByte(samples[base:base+samplesPerByte], lsbsToUse)
-		count += int(oneByte)
+func (d *decoder) readInt() int {
+	ret := 0
+	for i := 0; i < 4; i++ {
+		ret += int(d.readByte()) << uint(8*i)
 	}
+	return ret
+}
 
-	log.Println(count, "bytes to read")
-
-	data := []byte{}
+func (d *decoder) readBytes(count int) []byte {
+	ret := []byte{}
 	for i := 0; i < count; i++ {
-		// Each byte takes up 4 samples and we skip the first 4 because that's where
-		// we keep the length of the payload
-		base := (i + 4) * samplesPerByte
-
-		oneByte := decodeByte(samples[base:base+samplesPerByte], lsbsToUse)
-		data = append(data, oneByte)
+		ret = append(ret, d.readByte())
 	}
-
-	return data
+	return ret
 }
 
-func decodeByte(samples []wav.Sample, lsbsToUse int) byte {
+func (d *decoder) readByte() byte {
 	oneByte := byte(0)
-	for i := len(samples) - 1; i >= 0; i-- {
-		sample := samples[i]
-		for channel := 1; channel >= 0; channel-- {
-			value := sample.Values[channel]
-			for k := lsbsToUse; k > 0; k-- {
-				oneByte = oneByte << 1
-				oneByte += byte(value & 1)
-				value = value >> 1
-			}
+	for i := 0; i < 8; i++ {
+		sample := d.samples[d.ptr.sample]
+		value := sample.Values[d.ptr.channel]
+
+		mask := byte(1 << d.ptr.lsb)
+		if byte(value)&mask == mask {
+			oneByte |= 1 << uint(i)
+		}
+
+		d.ptr.lsb += 1
+		if d.ptr.lsb < uint(d.lsbsToUse) {
+			continue
+		}
+
+		d.ptr.lsb = 0
+		d.ptr.channel += 1
+		if d.ptr.channel == uint(d.format.NumChannels) {
+			d.ptr.sample += 1
+			d.ptr.channel = 0
 		}
 	}
 	return oneByte
