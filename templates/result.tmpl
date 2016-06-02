@@ -29,7 +29,7 @@
   //     waveColor: 'violet',
   //     progressColor: 'purple'
   // });
-  // output1.load("/wavs/{{ . }}/output-1.wav");
+  // output1.load("/{{ . }}/1");
   // var sliderOutput1 = document.querySelector('#zoom-output-1');
   // sliderOutput1.oninput = function () {
   //   var zoomLevel = Number(sliderOutput1.value);
@@ -41,7 +41,7 @@
   //     waveColor: 'violet',
   //     progressColor: 'purple'
   // });
-  // output2.load("/wavs/{{ . }}/output-2.wav");
+  // output2.load("/{{ . }}/2");
   // var sliderOutput2 = document.querySelector('#zoom-output-2');
   // sliderOutput2.oninput = function () {
   //   var zoomLevel = Number(sliderOutput2.value);
@@ -53,7 +53,7 @@
       waveColor: 'violet',
       progressColor: 'purple'
   });
-  output4.load("/wavs/{{ . }}/output-4.wav");
+  output4.load("/{{ . }}/29");
   var sliderOutput4 = document.querySelector('#zoom-output-4');
   sliderOutput4.oninput = function () {
     var zoomLevel = Number(sliderOutput4.value);
@@ -67,9 +67,6 @@
 
 <div class="row">
   <div class="section">
-    <p>
-      Here goes the result with guid {{ . }}
-    </p>
     <div class="waveform" id="waveform-input"></div>
     <div style="text-align: center">
       <button class="btn btn-primary" onclick="window.inputWav.playPause()">
@@ -89,7 +86,8 @@
       </div>
     </div>
 
-    <!--
+    <!---
+
     <br><br>
 
     <div class="waveform" id="waveform-output-1"></div>
@@ -134,6 +132,7 @@
       </div>
     </div>
     -->
+
     <br><br>
 
     <div class="waveform" id="waveform-output-4"></div>
