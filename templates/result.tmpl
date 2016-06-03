@@ -45,6 +45,7 @@
     });
     waveForm.on('ready', function() {
       $overlay.hide();
+      $('#lsb').attr('disabled', false).removeClass('disabled');
     });
     waveForm.on('error', function() {
       alert("error loading wav");
@@ -79,11 +80,50 @@
   outputWav.on('seek', function(progress) {
     inputWav.seekAndCenter(progress);
   });
+  outputWav.on('ready', function() {
+    inputWav.seekAndCenter(outputWav.getCurrentTime() / outputWav.getDuration());
+  });
+  $('#lsb').change(function() {
+    $("#waveform-output .overlay").show();
+    var lsb = $(this).attr('disabled', true).addClass('disabled').val();
+    $('#selected-lsb').html(lsb);
+    outputWav.load('/{{ . }}/' + lsb);
+    $('#download').attr('href', '/{{ . }}/' + lsb + '?download=1')
+  });
 </script>
 {{ end }}
 
 <div class="row">
   <div class="section">
+    <div class="row">
+      <div class="col-1-8">
+        <label>LSBs</label>
+      </div>
+      <div class="col-1-8">
+        <select id="lsb">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+        </select>
+      </div>
+    </div>
+
+    <br class="clear">
+    <br class="clear">
+
     <div class="row">
       <div class="col-1-8">
         &minus;
@@ -109,13 +149,16 @@
       <div class="overlay">
         <span class="load large"></span>
       </div>
-      <h3>LSBs used: <span>12</span></h3>
+      <h3>
+        LSBs:
+        <span id="selected-lsb">1</span>
+      </h3>
       <div class="waveform"></div>
       <div style="text-align: center; margin-top: 10px">
         <button class="btn solid green play">
           Play
         </button>
-        <a href="#" class="btn small no-outline blue">
+        <a href="/{{ . }}/1?download=1" id="download" class="btn small no-outline blue">
           Download
         </a>
       </div>

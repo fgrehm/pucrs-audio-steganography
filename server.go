@@ -56,12 +56,13 @@ func runServer(port string) {
 		workingDir := "wavs/" + id
 		filePath := fmt.Sprintf("%s/output-%s.wav", workingDir, lsbs)
 
+		lsbsToUse, err := strconv.Atoi(lsbs)
+		if err != nil {
+			return err
+		}
+
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			payload, err := ioutil.ReadFile(workingDir + "/payload.bin")
-			if err != nil {
-				return err
-			}
-			lsbsToUse, err := strconv.Atoi(lsbs)
 			if err != nil {
 				return err
 			}
@@ -75,7 +76,16 @@ func runServer(port string) {
 			}
 		}
 
-		return c.File(filePath)
+		if c.QueryParam("download") == "1" {
+			file, err := os.Open(filePath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			return c.Attachment(file, fmt.Sprintf("%s-%d.wav", id, lsbsToUse))
+		} else {
+			return c.File(filePath)
+		}
 	})
 	// TODO: REMOVE
 	e.Static("/wavs", "wavs")
