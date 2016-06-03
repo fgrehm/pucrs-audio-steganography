@@ -58,8 +58,8 @@ func (d *decoder) readByte() byte {
 		sample := d.samples[d.ptr.sample]
 		value := sample.Values[d.ptr.channel]
 
-		mask := byte(1 << d.ptr.lsb)
-		if byte(value)&mask == mask {
+		mask := int(1 << d.ptr.lsb)
+		if value&mask == mask {
 			oneByte |= 1 << uint(i)
 		}
 
