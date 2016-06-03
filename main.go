@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"io/ioutil"
 	"os"
 
@@ -18,7 +19,7 @@ var encodeCmd = &cobra.Command{
 		if len(args) != 3 {
 			return fmt.Errorf("Invalid arguments provided")
 		}
-		return encode(args[0], args[1], LSBsToUse, []byte(args[2]))
+		return encode(args[0], args[1], LSBsToUse, "__string__", []byte(args[2]))
 	},
 }
 
@@ -32,7 +33,8 @@ var encodeBinCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return encode(args[0], args[1], LSBsToUse, fileContents)
+		filename := filepath.Base(args[2])
+		return encode(args[0], args[1], LSBsToUse, filename, fileContents)
 	},
 }
 
@@ -43,31 +45,19 @@ var decodeCmd = &cobra.Command{
 			return fmt.Errorf("No file name provided")
 		}
 
-		str, err := decode(args[0], LSBsToUse)
+		filename, data, err := decode(args[0], LSBsToUse)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("String found:", string(str))
-		return nil
-	},
-}
-
-var decodeBinCmd = &cobra.Command{
-	Use: "decode-bin [input file] [output file]",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("Invalid arguments provided")
+		if filename == "__string__" {
+			fmt.Println("String found:", string(data))
+		} else {
+			if err := ioutil.WriteFile(filename, data, 0644); err != nil {
+				return err
+			}
+			fmt.Println("Payload wrote to", filename)
 		}
-
-		data, err := decode(args[0], LSBsToUse)
-		if err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(args[1], data, 0644); err != nil {
-			return err
-		}
-		fmt.Println("Payload wrote to", args[1])
 		return nil
 	},
 }
@@ -97,9 +87,8 @@ func main() {
 	rootCmd.PersistentFlags().IntVar(&LSBsToUse, "lsb", LSBsToUse, "the amount of least significant bits to use")
 	rootCmd.AddCommand(webCmd)
 	rootCmd.AddCommand(encodeCmd)
-	rootCmd.AddCommand(decodeCmd)
 	rootCmd.AddCommand(encodeBinCmd)
-	rootCmd.AddCommand(decodeBinCmd)
+	rootCmd.AddCommand(decodeCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

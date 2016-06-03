@@ -37,7 +37,9 @@ func runServer(port string) {
 		}
 		defer payload.Close()
 
-		id, err := processUpload(input, payload)
+		payloadFile, _ := c.FormFile("payload")
+
+		id, err := processUpload(input, payload, payloadFile.Filename)
 		if err != nil {
 			return err
 		}
@@ -63,7 +65,11 @@ func runServer(port string) {
 			if err != nil {
 				return err
 			}
-			err = encode(workingDir + "/input.wav", filePath, lsbsToUse, payload)
+			info, err := readInfo(workingDir + "/info.json")
+			if err != nil {
+				return err
+			}
+			err = encode(workingDir + "/input.wav", filePath, lsbsToUse, info.Filename, payload)
 			if err != nil {
 				return err
 			}
@@ -88,7 +94,7 @@ func openUploadedFile(c echo.Context, fileField string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func processUpload(input, payload io.Reader) (string, error) {
+func processUpload(input, payload io.Reader, filename string) (string, error) {
 	id := uuid.NewV4().String()
 	outputDir := "wavs/" + id
 	os.MkdirAll(outputDir, 0775)
@@ -97,6 +103,9 @@ func processUpload(input, payload io.Reader) (string, error) {
 		return "", err
 	}
 	if err := writeUploadedFile(payload, outputDir+"/payload.bin"); err != nil {
+		return "", err
+	}
+	if err := writeInfo(outputDir+"/input.wav", outputDir +"/payload.bin", outputDir+"/info.json", filename); err != nil {
 		return "", err
 	}
 

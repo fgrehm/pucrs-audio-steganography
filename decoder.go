@@ -1,27 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/youpy/go-wav"
 )
 
-func decode(inputPath string, lsbsToUse int) ([]byte, error) {
+func decode(inputPath string, lsbsToUse int) (string, []byte, error) {
 	log.Println("Decoding")
 
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	defer inputFile.Close()
 
 	samples, format := readSamples(inputFile)
 
 	decoder := &decoder{samples, format, lsbsToUse, decoderPtr{}}
+	filenameLength := decoder.readInt()
+	filename := string(decoder.readBytes(filenameLength))
 	dataLength := decoder.readInt()
 	log.Println("Payload size", dataLength, "bytes")
-	return decoder.readBytes(dataLength), nil
+	return filename, decoder.readBytes(dataLength), nil
 }
 
 type decoder struct {

@@ -8,7 +8,7 @@ import (
 	"github.com/youpy/go-wav"
 )
 
-func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
+func encode(inputPath, outputPath string, lsbsToUse int, filename string, data []byte) error {
 	log.Println("Encoding", inputPath, "to", outputPath)
 
 	inputFile, err := os.Open(inputPath)
@@ -29,6 +29,8 @@ func encode(inputPath, outputPath string, lsbsToUse int, data []byte) error {
 
 	log.Println("Encoding", len(data), "bytes")
 	encoder := &encoder{samples, format, lsbsToUse, encoderPtr{}}
+	encoder.writeInt(len(filename))
+	encoder.writeBytes([]byte(filename))
 	encoder.writeInt(len(data))
 	encoder.writeBytes(data)
 
