@@ -1,158 +1,123 @@
 {{ define "assets-result" }}
+<script src="http://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.0.52/wavesurfer.min.js"></script>
 <style>
+  @media screen and (min-width: 1440px) {
+    .section {
+      width: 95%;
+    }
+  }
+  .waveform-container {
+    position: relative;
+  }
+  .overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: gray;
+    opacity: 0.5;
+    text-align: center;
+  }
+  .overlay .load {
+    margin-top: 103px;
+  }
   .waveform {
     border: 1px solid black;
+    height: 200px;
   }
 </style>
 {{ end }}
 
 {{ define "js-result" }}
 <script>
-  inputWav = WaveSurfer.create({
-      container: '#waveform-input',
-      waveColor: 'black',
-      progressColor: 'gray'
-  });
-  inputWav.load("/wavs/{{ . }}/input.wav");
-  var sliderInput = document.querySelector('#zoom-input');
-  sliderInput.oninput = function () {
-    var zoomLevel = Number(sliderInput.value);
+  function loadWaveForm(filePath, $container) {
+    var $overlay = $container.find('.overlay').show();
+    var waveForm = WaveSurfer.create({
+        container: $container.find('.waveform')[0],
+        waveColor: 'black',
+        progressColor: 'gray',
+        height: 200
+    });
+    waveForm.on('loading', function(progress) {
+      $overlay.show();
+    });
+    waveForm.on('ready', function() {
+      $overlay.hide();
+    });
+    waveForm.on('error', function() {
+      alert("error loading wav");
+    });
+    $container.find('.btn.play').click(function () {
+      waveForm.playPause();
+    });
+    waveForm.load(filePath);
+    return waveForm;
+  }
+
+  inputWav = loadWaveForm("/wavs/{{ . }}/input.wav", $("#waveform-input"));
+  inputWav.toggleMute();
+
+  outputWav = loadWaveForm("/{{ . }}/1", $("#waveform-output"));
+
+  $('.zoom').change(function() {
+    var zoomLevel = Number($(this).val());
     inputWav.zoom(zoomLevel);
-  };
-  setTimeout(function () {
-    sliderInput.oninput();
-  }, 1000);
-
-  // output1 = WaveSurfer.create({
-  //     container: '#waveform-output-1',
-  //     waveColor: 'violet',
-  //     progressColor: 'purple'
-  // });
-  // output1.load("/{{ . }}/1");
-  // var sliderOutput1 = document.querySelector('#zoom-output-1');
-  // sliderOutput1.oninput = function () {
-  //   var zoomLevel = Number(sliderOutput1.value);
-  //   output1.zoom(zoomLevel);
-  // };
-
-  // output2 = WaveSurfer.create({
-  //     container: '#waveform-output-2',
-  //     waveColor: 'violet',
-  //     progressColor: 'purple'
-  // });
-  // output2.load("/{{ . }}/2");
-  // var sliderOutput2 = document.querySelector('#zoom-output-2');
-  // sliderOutput2.oninput = function () {
-  //   var zoomLevel = Number(sliderOutput2.value);
-  //   output2.zoom(zoomLevel);
-  // };
-
-  output4 = WaveSurfer.create({
-      container: '#waveform-output-4',
-      waveColor: 'violet',
-      progressColor: 'purple'
+    outputWav.zoom(zoomLevel);
   });
-  output4.load("/{{ . }}/29");
-  var sliderOutput4 = document.querySelector('#zoom-output-4');
-  sliderOutput4.oninput = function () {
-    var zoomLevel = Number(sliderOutput4.value);
-    output4.zoom(zoomLevel);
-  };
-  setTimeout(function () {
-    sliderOutput4.oninput();
-  }, 1000);
+
+  inputWav.on('pause', function() {
+    inputWav.seekAndCenter(outputWav.getCurrentTime() / outputWav.getDuration());
+  });
+  outputWav.on('play', function() {
+    inputWav.play();
+  });
+  outputWav.on('pause', function() {
+    inputWav.pause();
+  });
+  outputWav.on('seek', function(progress) {
+    inputWav.seekAndCenter(progress);
+  });
 </script>
 {{ end }}
 
 <div class="row">
   <div class="section">
-    <div class="waveform" id="waveform-input"></div>
-    <div style="text-align: center">
-      <button class="btn btn-primary" onclick="window.inputWav.playPause()">
-        Play
-      </button>
-
-      <div class="row">
-        <div class="col-1-8">
-          &minus;
-        </div>
-        <div class="col-3-4">
-          <input id="zoom-input" type="range" min="1" max="500" value="500" style="width: 100%" />
-        </div>
-        <div class="col-1-8">
-          &plus;
-        </div>
+    <div class="row">
+      <div class="col-1-8">
+        &minus;
+      </div>
+      <div class="col-3-4">
+        <input class="zoom" type="range" min="1" max="500" value="1" style="width: 100%" />
+      </div>
+      <div class="col-1-8">
+        &plus;
       </div>
     </div>
 
-    <!---
+    <br class="clear">
 
-    <br><br>
-
-    <div class="waveform" id="waveform-output-1"></div>
-    <div style="text-align: center">
-      <button class="btn btn-primary" onclick="window.output1.playPause()">
-        Play
-      </button>
-
-      <div class="row">
-        <div class="col-1-8">
-          &plus;
-        </div>
-        <div class="col-3-4">
-          <input id="zoom-output-1" type="range" min="1" max="500" value="1" style="width: 100%" />
-        </div>
-
-        <div class="col-1-8">
-          &minus;
-        </div>
+    <div id="waveform-input" class="waveform-container">
+      <div class="overlay">
+        <span class="load large"></span>
       </div>
+      <h3>Original</h3>
+      <div class="waveform"></div>
     </div>
-
-    <br><br>
-
-    <div class="waveform" id="waveform-output-2"></div>
-    <div style="text-align: center">
-      <button class="btn btn-primary" onclick="window.output2.playPause()">
-        Play
-      </button>
-
-      <div class="row">
-        <div class="col-1-8">
-          &plus;
-        </div>
-        <div class="col-3-4">
-          <input id="zoom-output-2" type="range" min="1" max="500" value="1" style="width: 100%" />
-        </div>
-
-        <div class="col-1-8">
-          &minus;
-        </div>
+    <div id="waveform-output" class="waveform-container">
+      <div class="overlay">
+        <span class="load large"></span>
       </div>
-    </div>
-    -->
-
-    <br><br>
-
-    <div class="waveform" id="waveform-output-4"></div>
-    <div style="text-align: center">
-      <button class="btn btn-primary" onclick="window.output4.playPause()">
-        Play
-      </button>
-
-      <div class="row">
-        <div class="col-1-8">
-          &minus;
-        </div>
-
-        <div class="col-3-4">
-          <input id="zoom-output-4" type="range" min="1" max="500" value="500" style="width: 100%" />
-        </div>
-
-        <div class="col-1-8">
-          &plus;
-        </div>
+      <h3>LSBs used: <span>12</span></h3>
+      <div class="waveform"></div>
+      <div style="text-align: center; margin-top: 10px">
+        <button class="btn solid green play">
+          Play
+        </button>
+        <a href="#" class="btn small no-outline blue">
+          Download
+        </a>
       </div>
     </div>
   </div>
