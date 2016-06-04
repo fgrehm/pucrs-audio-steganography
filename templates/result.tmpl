@@ -60,7 +60,7 @@
   inputWav = loadWaveForm("/wavs/{{ . }}/input.wav", $("#waveform-input"));
   inputWav.toggleMute();
 
-  outputWav = loadWaveForm("/{{ . }}/1", $("#waveform-output"));
+  outputWav = loadWaveForm('/wavs/{{ . }}/output-1.wav', $("#waveform-output"));
 
   $('.zoom').change(function() {
     var zoomLevel = Number($(this).val());
@@ -68,9 +68,6 @@
     outputWav.zoom(zoomLevel);
   });
 
-  inputWav.on('pause', function() {
-    inputWav.seekAndCenter(outputWav.getCurrentTime() / outputWav.getDuration());
-  });
   outputWav.on('play', function() {
     inputWav.play();
   });
@@ -87,8 +84,9 @@
     $("#waveform-output .overlay").show();
     var lsb = $(this).attr('disabled', true).addClass('disabled').val();
     $('#selected-lsb').html(lsb);
-    outputWav.load('/{{ . }}/' + lsb);
-    $('#download').attr('href', '/{{ . }}/' + lsb + '?download=1')
+    var outputFile = '/wavs/{{ . }}/output-' + lsb + '.wav';
+    outputWav.load(outputFile);
+    $('#download').attr('href', outputFile)
   });
 </script>
 {{ end }}

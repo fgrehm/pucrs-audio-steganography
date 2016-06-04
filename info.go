@@ -1,8 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"encoding/json"
+	"io/ioutil"
 )
 
 type stegInfo struct {

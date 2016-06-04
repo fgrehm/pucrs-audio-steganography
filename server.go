@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
+	"sync"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
@@ -24,113 +24,82 @@ func runServer(port string) {
 	e.GET("/", func(c echo.Context) error {
 		return renderTemplate(c, r, http.StatusOK, "form", nil)
 	})
-	e.POST("/", func(c echo.Context) error {
-		input, err := openUploadedFile(c, "input")
-		if err != nil {
-			return err
-		}
-		defer input.Close()
-
-		payload, err := openUploadedFile(c, "payload")
-		if err != nil {
-			return err
-		}
-		defer payload.Close()
-
-		payloadFile, _ := c.FormFile("payload")
-
-		id, err := processUpload(input, payload, payloadFile.Filename)
-		if err != nil {
-			return err
-		}
-
-		return c.Redirect(http.StatusMovedPermanently, "/"+id)
-	})
+	e.POST("/", processUpload)
 	e.GET("/:id", func(c echo.Context) error {
 		id := c.Param("id")
 		return renderTemplate(c, r, http.StatusOK, "result", id)
 	})
-	e.GET("/:id/:lsbs", func(c echo.Context) error {
-		id := c.Param("id")
-		lsbs := c.Param("lsbs")
-		workingDir := "wavs/" + id
-		filePath := fmt.Sprintf("%s/output-%s.wav", workingDir, lsbs)
 
-		lsbsToUse, err := strconv.Atoi(lsbs)
-		if err != nil {
-			return err
-		}
-
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			payload, err := ioutil.ReadFile(workingDir + "/payload.bin")
-			if err != nil {
-				return err
-			}
-			info, err := readInfo(workingDir + "/info.json")
-			if err != nil {
-				return err
-			}
-			err = encode(workingDir + "/input.wav", filePath, lsbsToUse, info.Filename, payload)
-			if err != nil {
-				return err
-			}
-		}
-
-		if c.QueryParam("download") == "1" {
-			file, err := os.Open(filePath)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			return c.Attachment(file, fmt.Sprintf("%s-%d.wav", id, lsbsToUse))
-		} else {
-			return c.File(filePath)
-		}
-	})
-	// TODO: REMOVE
 	e.Static("/wavs", "wavs")
 	e.Run(standard.New(":" + port))
 }
 
-func openUploadedFile(c echo.Context, fileField string) (io.ReadCloser, error) {
-	fileHeader, err := c.FormFile(fileField)
-	if err != nil {
-		return nil, err
+func processUpload(c echo.Context) error {
+	id := c.FormValue("id")
+	if id == "" {
+		id = uuid.NewV4().String()
 	}
-	file, err := fileHeader.Open()
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
-}
 
-func processUpload(input, payload io.Reader, filename string) (string, error) {
-	id := uuid.NewV4().String()
 	outputDir := "wavs/" + id
 	os.MkdirAll(outputDir, 0775)
 
-	if err := writeUploadedFile(input, outputDir+"/input.wav"); err != nil {
-		return "", err
-	}
-	if err := writeUploadedFile(payload, outputDir+"/payload.bin"); err != nil {
-		return "", err
-	}
-	if err := writeInfo(outputDir+"/input.wav", outputDir +"/payload.bin", outputDir+"/info.json", filename); err != nil {
-		return "", err
-	}
-
-	return id, nil
-}
-
-func writeUploadedFile(source io.Reader, path string) error {
-	file, err := os.Create(path)
+	_, err := writeUploadedFile(c, "input", outputDir+"/input.wav")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	_, err = io.Copy(file, source)
 
-	return err
+	filename, err := writeUploadedFile(c, "payload", outputDir+"/payload.bin")
+	if err != nil {
+		return err
+	}
+
+	// Fire goroutines to encode everything
+	encodePayloads(outputDir, filename)
+
+	return c.Redirect(http.StatusMovedPermanently, "/"+id)
+}
+
+func encodePayloads(workingDir, filename string) error {
+	inputPath := workingDir + "/input.wav"
+	payload, err := ioutil.ReadFile(workingDir + "/payload.bin")
+	if err != nil {
+		return err
+	}
+	wg := new(sync.WaitGroup)
+	for lsbsToUse := 1; lsbsToUse <= 32; lsbsToUse++ {
+		wg.Add(1)
+		go func(lsbsToUse int) {
+			defer wg.Done()
+			outputPath := fmt.Sprintf("%s/output-%d.wav", workingDir, lsbsToUse)
+			// This might error but for now we don't care
+			if err := encode(inputPath, outputPath, lsbsToUse, filename, payload); err != nil {
+				fmt.Println(err)
+			}
+		}(lsbsToUse)
+	}
+	wg.Wait()
+	return nil
+}
+
+func writeUploadedFile(c echo.Context, fileField, outputFile string) (string, error) {
+	file, err := c.FormFile(fileField)
+	if err != nil {
+		return "", err
+	}
+	source, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(outputFile)
+	if err != nil {
+		return "", err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+
+	return file.Filename, err
 }
 
 func renderTemplate(c echo.Context, r *render.Render, status int, name string, binding interface{}) error {
@@ -138,6 +107,6 @@ func renderTemplate(c echo.Context, r *render.Render, status int, name string, b
 		return r.HTML(w.ResponseWriter, status, name, binding)
 	} else {
 		panic("Ooops")
+		return nil
 	}
-	return nil
 }

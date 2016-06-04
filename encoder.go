@@ -20,10 +20,15 @@ func encode(inputPath, outputPath string, lsbsToUse int, filename string, data [
 	samples, format := readSamples(inputFile)
 	inputFile.Close()
 
+	if lsbsToUse > int(format.BitsPerSample) {
+		return fmt.Errorf("The file does not have enough bits to handle the amount of LSBs provided")
+	}
+
 	usableBytesCount := len(samples) * int(format.NumChannels) * lsbsToUse / 8
 	log.Printf("%d samples read, %d kbytes available to write", len(samples), usableBytesCount/1024)
 
-	if len(data) > usableBytesCount {
+	headerLen := 4*2 + len(filename)
+	if (len(data) - headerLen) > usableBytesCount {
 		return fmt.Errorf("The input file is too small to handle the payload")
 	}
 
