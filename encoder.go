@@ -21,7 +21,7 @@ func encode(inputPath, outputPath string, lsbsToUse int, filename string, data [
 	inputFile.Close()
 
 	if lsbsToUse > int(format.BitsPerSample) {
-		return fmt.Errorf("The file does not have enough bits to handle the amount of LSBs provided")
+		return fmt.Errorf("The audio file does not have enough bits per sample (%d) to handle the amount of LSBs provided (%d)", format.BitsPerSample, lsbsToUse)
 	}
 
 	usableBytesCount := len(samples) * int(format.NumChannels) * lsbsToUse / 8

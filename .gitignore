@@ -1,3 +1,5 @@
 steganography-wav
 gin-bin
 *.wav
+wavs/
+build/
